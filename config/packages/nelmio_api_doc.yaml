@@ -1,0 +1,9 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Chair Factory API
+            description: API for the chair factory application
+            version: 1.0.0
+    areas:
+        path_patterns:
+            - ^/api/

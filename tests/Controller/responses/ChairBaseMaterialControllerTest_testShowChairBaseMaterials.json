@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Metal",
+      "price": 2300
+    },
+    {
+      "id": 2,
+      "name": "Plastic",
+      "price": 500
+    },
+    {
+      "id": 3,
+      "name": "Wooden",
+      "price": 1400
+    }
+  ]
+}

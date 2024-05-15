@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Flock",
+      "price": 2000
+    },
+    {
+      "id": 2,
+      "name": "Jacquard",
+      "price": 5000
+    },
+    {
+      "id": 3,
+      "name": "Microfiber",
+      "price": 1000
+    }
+  ]
+}
