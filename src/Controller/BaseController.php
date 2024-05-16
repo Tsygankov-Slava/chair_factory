@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Service\BasicChairService;
+use App\Service\BaseService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -10,9 +10,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Annotations as OA;
 use Nelmio\ApiDocBundle\Annotation\Model;
 
-class BasicChairController extends AbstractController
+class BaseController extends AbstractController
 {
-    public function __construct(private readonly BasicChairService $basicChairService)
+    public function __construct(private readonly BaseService $basicChairService)
     {
     }
 

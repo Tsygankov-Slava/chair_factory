@@ -2,7 +2,7 @@
 
 namespace App\Tests\Controller;
 
-use App\Controller\ChairBaseMaterialController;
+use App\Controller\MaterialController;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ChairBaseMaterialControllerTest extends WebTestCase

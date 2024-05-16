@@ -2,7 +2,7 @@
 
 namespace App\Tests\Controller;
 
-use App\Controller\BasicChairController;
+use App\Controller\BaseController;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class BasicChairControllerTest extends WebTestCase

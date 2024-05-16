@@ -8,8 +8,8 @@ use App\Model\ChairInOrder;
 use App\Model\IdResponse;
 use App\Model\OrderArrayItem;
 use App\Model\OrderArrayResponse;
-use App\Repository\BasicChairRepository;
-use App\Repository\ChairBaseMaterialRepository;
+use App\Repository\BaseRepository;
+use App\Repository\MaterialRepository;
 use App\Repository\ChairUpholsteryMaterialRepository;
 use App\Repository\OrderRepository;
 use DateTime;
@@ -19,9 +19,8 @@ class OrderService
 {
     public function __construct(
         private readonly OrderRepository                   $orderRepository,
-        private readonly BasicChairRepository              $basicChairRepository,
-        private readonly ChairBaseMaterialRepository       $chairBaseMaterialRepository,
-        private readonly ChairUpholsteryMaterialRepository $chairUpholsteryMaterialRepository,
+        private readonly BaseRepository                    $basicChairRepository,
+        private readonly MaterialRepository                $chairBaseMaterialRepository,
         private readonly EntityManagerInterface            $entityManager
     ) {
     }

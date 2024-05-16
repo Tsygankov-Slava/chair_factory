@@ -19,23 +19,11 @@ class Order
     #[ORM\Column(type: 'integer')]
     private int $userId;
 
-    #[ORM\Column(type: 'string', length: 255)]
-    private string $status;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $basicChairIdArray;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $chairBaseMaterialIdArray;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $chairUpholsteryMaterialArray;
-
-    #[ORM\Column(type: Types::JSON)]
-    private array $chairsQuantityArray;
+    #[ORM\Column(type: 'integer')]
+    private string $statusType;
 
     #[ORM\Column(type: 'decimal', precision: 5)]
-    private float $price;
+    private float $totalPrice;
 
     #[ORM\Column(type: 'datetime')]
     private DateTimeInterface $createdAt;
@@ -59,69 +47,25 @@ class Order
         return $this;
     }
 
-    public function getStatus(): ?string
+    public function getStatusType(): int
     {
-        return $this->status;
+        return $this->statusType;
     }
 
-    public function setStatus(string $status): self
+    public function setStatusType(int $statusType): self
     {
-        $this->status = $status;
+        $this->statusType = $statusType;
         return $this;
     }
 
-    public function getBasicChairIdArray(): array
+    public function getTotalPrice(): ?float
     {
-        return $this->basicChairIdArray;
+        return $this->totalPrice;
     }
 
-    public function setBasicChairIdArray(array $basicChairIdArray): self
+    public function setTotalPrice(float $totalPrice): self
     {
-        $this->basicChairIdArray = $basicChairIdArray;
-        return $this;
-    }
-
-    public function getChairBaseMaterialIdArray(): array
-    {
-        return $this->chairBaseMaterialIdArray;
-    }
-
-    public function setChairBaseMaterialIdArray(array $chairBaseMaterialIdArray): self
-    {
-        $this->chairBaseMaterialIdArray = $chairBaseMaterialIdArray;
-        return $this;
-    }
-
-    public function getChairUpholsteryMaterialArray(): array
-    {
-        return $this->chairUpholsteryMaterialArray;
-    }
-
-    public function setChairUpholsteryMaterialArray(array $chairUpholsteryMaterialArray): self
-    {
-        $this->chairUpholsteryMaterialArray = $chairUpholsteryMaterialArray;
-        return $this;
-    }
-
-    public function getChairsQuantityArray(): array
-    {
-        return $this->chairsQuantityArray;
-    }
-
-    public function setChairsQuantityArray(array $chairsQuantityArray): self
-    {
-        $this->chairsQuantityArray = $chairsQuantityArray;
-        return $this;
-    }
-
-    public function getPrice(): ?float
-    {
-        return $this->price;
-    }
-
-    public function setPrice(float $price): self
-    {
-        $this->price = $price;
+        $this->totalPrice = $totalPrice;
         return $this;
     }
 

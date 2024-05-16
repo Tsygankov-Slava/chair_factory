@@ -2,36 +2,38 @@
 
 namespace App\Service;
 
-use App\Entity\ChairBaseMaterial;
+use App\Entity\Material;
 use App\Model\ChairMaterialArrayItem;
 use App\Model\ChairMaterialArrayResponse;
 use App\Model\IdResponse;
-use App\Repository\ChairBaseMaterialRepository;
+use App\Repository\MaterialRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class ChairBaseMaterialService
+class MaterialService
 {
-    public function __construct(private ChairBaseMaterialRepository $chairBaseMaterialRepository,
-                                private EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private MaterialRepository     $chairBaseMaterialRepository,
+        private EntityManagerInterface $entityManager
+    ) {
     }
 
     public function show(): ChairMaterialArrayResponse
     {
         $chairBaseMaterials = $this->chairBaseMaterialRepository->findAll();
         return new ChairMaterialArrayResponse(array_map(
-            fn (ChairBaseMaterial $chairBaseMaterial) => new ChairMaterialArrayItem(
+            fn (Material $chairBaseMaterial) => new ChairMaterialArrayItem(
                 $chairBaseMaterial->getId(),
                 $chairBaseMaterial->getName(),
                 $chairBaseMaterial->getPrice()
-            ), $chairBaseMaterials
+            ),
+            $chairBaseMaterials
         ));
     }
 
     public function create(string $name, float $price): IdResponse
     {
-        $chairBaseMaterial = new ChairBaseMaterial();
+        $chairBaseMaterial = new Material();
         $chairBaseMaterial->setName($name);
         $chairBaseMaterial->setPrice($price);
 

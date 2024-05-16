@@ -2,34 +2,38 @@
 
 namespace App\Service;
 
-use App\Entity\BasicChair;
+use App\Entity\Base;
 use App\Model\BasicChairArrayItem;
 use App\Model\BasicChairArrayResponse;
 use App\Model\IdResponse;
-use App\Repository\BasicChairRepository;
+use App\Repository\BaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class BasicChairService
+class BaseService
 {
-    public function __construct(private readonly BasicChairRepository   $basicChairRepository,
-                                private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly BaseRepository         $basicChairRepository,
+        private readonly EntityManagerInterface $entityManager
+    ) {
     }
 
     public function show(): BasicChairArrayResponse
     {
         $basicChairs = $this->basicChairRepository->findAll();
         return new BasicChairArrayResponse(array_map(
-            fn (BasicChair $basicChair) => new BasicChairArrayItem(
-                $basicChair->getId(), $basicChair->getType(), $basicChair->getPrice()
-            ), $basicChairs
+            fn (Base $basicChair) => new BasicChairArrayItem(
+                $basicChair->getId(),
+                $basicChair->getType(),
+                $basicChair->getPrice()
+            ),
+            $basicChairs
         ));
     }
 
     public function create(string $type, float $price): IdResponse
     {
-        $basicChair = new BasicChair();
+        $basicChair = new Base();
         $basicChair->setType($type);
         $basicChair->setPrice($price);
 
