@@ -3,8 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\OrderRepository;
-use DateTimeInterface;
-use Doctrine\DBAL\Types\Types;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
@@ -16,45 +16,53 @@ class Order
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\Column(type: 'integer')]
-    private int $userId;
+    #[ORM\ManyToOne(targetEntity: Status::class, inversedBy: 'orders')]
+    private ?Status $status;
+
+    #[ORM\OneToMany(targetEntity: ProductOrder::class, mappedBy: 'order')]
+    private ArrayCollection $productsOrder;
 
     #[ORM\Column(type: 'integer')]
-    private string $statusType;
+    private string $statusId;
 
     #[ORM\Column(type: 'decimal', precision: 5)]
     private float $totalPrice;
 
     #[ORM\Column(type: 'datetime')]
-    private DateTimeInterface $createdAt;
+    private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: 'datetime')]
-    private DateTimeInterface $updatedAt;
+    private \DateTimeInterface $updatedAt;
+
+    public function __construct()
+    {
+        $this->productsOrder = new ArrayCollection();
+    }
+
+    public function getStatus(): ?Status
+    {
+        return $this->status;
+    }
+
+    public function getProducts(): Collection
+    {
+        return $this->productsOrder;
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getUserId(): ?int
-    {
-        return $this->userId;
-    }
-
-    public function setUserId(int $userId): self
-    {
-        $this->userId = $userId;
-        return $this;
-    }
-
     public function getStatusType(): int
     {
-        return $this->statusType;
+        return $this->statusId;
     }
 
-    public function setStatusType(int $statusType): self
+    public function setStatusType(int $statusId): self
     {
-        $this->statusType = $statusType;
+        $this->statusId = $statusId;
+
         return $this;
     }
 
@@ -66,28 +74,37 @@ class Order
     public function setTotalPrice(float $totalPrice): self
     {
         $this->totalPrice = $totalPrice;
+
         return $this;
     }
 
-    public function getCreatedAt(): ?DateTimeInterface
+    public function getCreatedAt(): ?\DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(DateTimeInterface $createdAt): self
+    public function setStatus(?Status $status): self
     {
-        $this->createdAt = $createdAt;
+        $this->status = $status;
         return $this;
     }
 
-    public function getUpdatedAt(): ?DateTimeInterface
+    public function setCreatedAt(\DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(DateTimeInterface $updatedAt): self
+    public function setUpdatedAt(\DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+
         return $this;
     }
 }

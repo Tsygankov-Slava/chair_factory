@@ -3,7 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\CategoryRepository;
-use DateTimeInterface;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
@@ -15,6 +15,12 @@ class Category
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\OneToMany(targetEntity: Material::class, mappedBy: 'category')]
+    private ArrayCollection $materials;
+
+    #[ORM\ManyToOne(targetEntity: Base::class, inversedBy: 'categories')]
+    private Base $base;
+
     #[ORM\Column(type: 'integer')]
     private int $baseId;
 
@@ -22,10 +28,31 @@ class Category
     private string $title;
 
     #[ORM\Column(type: 'datetime')]
-    private DateTimeInterface $createdAt;
+    private \DateTimeInterface $createdAt;
 
     #[ORM\Column(type: 'datetime')]
-    private DateTimeInterface $updatedAt;
+    private \DateTimeInterface $updatedAt;
+
+    public function __construct()
+    {
+        $this->materials = new ArrayCollection();
+    }
+
+    public function getMaterials(): ArrayCollection
+    {
+        return $this->materials;
+    }
+
+    public function getBase(): ?Base
+    {
+        return $this->base;
+    }
+
+    public function setBase(?Base $base): self
+    {
+        $this->base = $base;
+        return $this;
+    }
 
     public function getId(): ?int
     {
@@ -42,12 +69,12 @@ class Category
         return $this->title;
     }
 
-    public function getCreatedAt(): DateTimeInterface
+    public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): DateTimeInterface
+    public function getUpdatedAt(): \DateTimeInterface
     {
         return $this->updatedAt;
     }
@@ -63,13 +90,14 @@ class Category
         $this->title = $title;
         return $this;
     }
-    public function setCreatedAt(DateTimeInterface $createdAt): self
+
+    public function setCreatedAt(\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
         return $this;
     }
 
-    public function setUpdatedAt(DateTimeInterface $updatedAt): self
+    public function setUpdatedAt(\DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
         return $this;

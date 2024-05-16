@@ -2,28 +2,28 @@
 
 namespace App\Entity;
 
-use App\Repository\StatusRepository;
+use App\Repository\DepartamentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: StatusRepository::class)]
-#[ORM\Table(name: '`statuses`')]
-class Status
+#[ORM\Entity(repositoryClass: DepartamentRepository::class)]
+#[ORM\Table(name: '`departments`')]
+class Department
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'status')]
-    private ArrayCollection $orders;
+    #[ORM\OneToMany(targetEntity: Base::class, mappedBy: 'department')]
+    private ArrayCollection $bases;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $name;
 
     #[ORM\Column(type: 'string', length: 255)]
     private string $code;
-
-    #[ORM\Column(type: 'string', length: 255)]
-    private string $description;
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
@@ -33,12 +33,7 @@ class Status
 
     public function __construct()
     {
-        $this->orders = new ArrayCollection();
-    }
-
-    public function getOrders(): Collection
-    {
-        return $this->orders;
+        $this->bases = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -46,14 +41,19 @@ class Status
         return $this->id;
     }
 
+    public function getBases(): Collection
+    {
+        return $this->bases;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
     public function getCode(): string
     {
         return $this->code;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
     }
 
     public function getCreatedAt(): \DateTimeInterface
@@ -66,31 +66,29 @@ class Status
         return $this->updatedAt;
     }
 
-    public function setCode(string $code): self
+    public function setName(string $name): self
     {
-        $this->code = $code;
-
+        $this->name = $name;
         return $this;
     }
 
-    public function setDescription(string $description): self
+    public function setCode(string $code): self
     {
-        $this->description = $description;
-
+        $this->code = $code;
         return $this;
     }
 
     public function setCreatedAt(\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
-
         return $this;
     }
 
     public function setUpdatedAt(\DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
-
         return $this;
     }
+
+
 }
