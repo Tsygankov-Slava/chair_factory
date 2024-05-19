@@ -2,10 +2,12 @@
 
 namespace App\Service;
 
+use App\Controller\EntityFieldHelper;
 use App\Entity\Material;
-use App\Model\ChairMaterialArrayItem;
-use App\Model\ChairMaterialArrayResponse;
+use App\Model\ArrayResponse;
 use App\Model\IdResponse;
+use App\Model\MaterialArrayItem;
+use App\Repository\CategoryRepository;
 use App\Repository\MaterialRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -13,62 +15,122 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class MaterialService
 {
     public function __construct(
-        private MaterialRepository     $chairBaseMaterialRepository,
-        private EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly CategoryRepository $categoryRepository,
+        private readonly MaterialRepository $materialRepository
     ) {
     }
 
-    public function show(): ChairMaterialArrayResponse
+    public function show(string $order, string $orderField, int $limit, int $offset): ArrayResponse
     {
-        $chairBaseMaterials = $this->chairBaseMaterialRepository->findAll();
-        return new ChairMaterialArrayResponse(array_map(
-            fn (Material $chairBaseMaterial) => new ChairMaterialArrayItem(
-                $chairBaseMaterial->getId(),
-                $chairBaseMaterial->getName(),
-                $chairBaseMaterial->getPrice()
+        if (!in_array($order, ['ASC', 'DESC'])) {
+            throw new \InvalidArgumentException('Invalid order parameter');
+        }
+
+        $helper = new EntityFieldHelper($this->entityManager);
+        $fields = $helper->getEntityFields(Material::class);
+
+        if (!in_array($orderField, $fields)) {
+            throw new \InvalidArgumentException('Invalid order_field parameter');
+        }
+
+        $query = $this->entityManager->createQuery(
+            'SELECT material, category, base, department
+             FROM App\Entity\Material material
+             JOIN material.category category
+             JOIN category.base base
+             JOIN base.department department
+             ORDER BY base.'.$orderField.' '.$order
+        )
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        $materials = $query->getResult();
+
+        if (empty($materials)) {
+            error_log('No data found');
+        } else {
+            error_log('Data found: '.print_r($materials, true));
+        }
+
+        return new ArrayResponse(array_map(
+            fn (Material $material) => new MaterialArrayItem(
+                $material->getId(),
+                $material->getType(),
+                $material->getTitle(),
+                $material->getPrice(),
+                $material->getCategory()->getId(),
+                $material->getCategoryCode(),
+                $material->getCreatedAt(),
+                $material->getUpdatedAt()
             ),
-            $chairBaseMaterials
+            $materials
         ));
     }
 
-    public function create(string $name, float $price): IdResponse
+    public function create(string $type, string $title, float $price, int $categoryCode, int $categoryId): IdResponse
     {
-        $chairBaseMaterial = new Material();
-        $chairBaseMaterial->setName($name);
-        $chairBaseMaterial->setPrice($price);
+        $material = new Material();
+        $material->setType($type);
+        $material->setTitle($title);
+        $material->setPrice($price);
+        $material->setCategoryCode($categoryCode);
+        $category = $this->categoryRepository->find($categoryId);
+        if (null === $category) {
+            throw new NotFoundHttpException('Category not found');
+        }
+        $material->setCategory($category);
+        $material->setCreatedAt(new \DateTime());
+        $material->setUpdatedAt(new \DateTime());
 
-        $this->entityManager->persist($chairBaseMaterial);
+        $this->entityManager->persist($material);
         $this->entityManager->flush();
 
-        return new IdResponse($chairBaseMaterial->getId());
+        return new IdResponse($material->getId());
     }
 
-    public function update(int $id, ?string $name, ?float $price): IdResponse
+    public function update(int $id, ?string $type, ?string $title, ?float $price, ?int $categoryCode, ?int $categoryId): IdResponse
     {
-        $chairBaseMaterial = $this->chairBaseMaterialRepository->find($id);
-        if (null === $chairBaseMaterial) {
-            throw new NotFoundHttpException('The chair base material was not found.');
+        $material = $this->materialRepository->find($id);
+        if (null === $material) {
+            throw new NotFoundHttpException('The material was not found.');
         }
 
-        if (null !== $name) {
-            $chairBaseMaterial->setName($name);
+        if (null !== $type) {
+            $material->setType($type);
+        }
+        if (null !== $title) {
+            $material->setTitle($title);
         }
         if (null !== $price) {
-            $chairBaseMaterial->setPrice($price);
+            $material->setPrice($price);
         }
+        if (null !== $categoryCode) {
+            $material->setCategoryCode($categoryCode);
+        }
+        if (null !== $categoryId) {
+            $category = $this->categoryRepository->find($categoryId);
+            if (null === $category) {
+                throw new NotFoundHttpException('Category not found');
+            }
+            $material->setCategory($category);
+        }
+
+        $material->setUpdatedAt(new \DateTime());
+
         $this->entityManager->flush();
 
-        return new IdResponse($chairBaseMaterial->getId());
+        return new IdResponse($material->getId());
     }
 
     public function delete(int $id): IdResponse
     {
-        $chairBaseMaterial = $this->chairBaseMaterialRepository->find($id);
-        if (null === $chairBaseMaterial) {
-            throw new NotFoundHttpException('The chair base material was not found.');
+        $material = $this->materialRepository->find($id);
+        if (null === $material) {
+            throw new NotFoundHttpException('The material was not found.');
         }
 
-        $this->entityManager->remove($chairBaseMaterial);
+        $this->entityManager->remove($material);
         $this->entityManager->flush();
 
         return new IdResponse($id);

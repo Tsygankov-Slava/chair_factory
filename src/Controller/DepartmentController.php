@@ -2,24 +2,24 @@
 
 namespace App\Controller;
 
-use App\Service\BaseService;
-use Nelmio\ApiDocBundle\Annotation\Model;
-use OpenApi\Annotations as OA;
+use App\Service\DepartmentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use OpenApi\Annotations as OA;
 
-class BaseController extends AbstractController
+class DepartmentController extends AbstractController
 {
-    public function __construct(private readonly BaseService $baseService)
+    public function __construct(private readonly DepartmentService $departmentService)
     {
     }
 
     /**
      * @OA\Response(
      *     response=200,
-     *     description="Return information about bases",
+     *     description="Return information about departments",
      *
      *     @Model(type=ArrayResponse::class)
      * )
@@ -40,13 +40,13 @@ class BaseController extends AbstractController
      *      )
      *  )
      */
-    #[Route(path: 'api/bases', methods: ['GET'])]
+    #[Route(path: 'api/departments', methods: ['GET'])]
     public function show(Request $request): JsonResponse
     {
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
             if (isset($requestJSON['order']) and isset($requestJSON['order_field']) and isset($requestJSON['limit']) and isset($requestJSON['offset'])) {
-                return new JsonResponse($this->baseService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']));
+                return new JsonResponse($this->departmentService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']));
             }
 
             return new JsonResponse(
@@ -68,7 +68,7 @@ class BaseController extends AbstractController
     /**
      * @OA\Response(
      *     response=200,
-     *     description="Create information about base",
+     *     description="Create information about department",
      *
      *     @Model(type=ArrayResponse::class)
      * )
@@ -82,24 +82,22 @@ class BaseController extends AbstractController
      *     @OA\JsonContent(
      *         type="object",
      *
-     *         @OA\Property(property="type", type="string", example="Test"),
-     *         @OA\Property(property="title", type="string", example="Test"),
-     *         @OA\Property(property="price", type="integer", example="1000"),
-     *         @OA\Property(property="department_id", type="integer", example="10"),
+     *         @OA\Property(property="name", type="string", example="Name"),
+     *         @OA\Property(property="code", type="integer", example=201),
      *     )
      * )
      */
-    #[Route(path: 'api/bases', methods: ['POST'])]
+    #[Route(path: 'api/departments', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
-            if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['department_id'])) {
-                return new JsonResponse($this->baseService->create($requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']));
+            if (isset($requestJSON['name']) && isset($requestJSON['code'])) {
+                return new JsonResponse($this->departmentService->create($requestJSON['name'], $requestJSON['code']));
             }
 
             return new JsonResponse(
-                ['error' => 'Invalid JSON format. "type" and "price" fields are required.'],
+                ['error' => 'Invalid JSON format. "name" and "code" fields are required.'],
                 400,
                 [],
                 true
@@ -123,30 +121,28 @@ class BaseController extends AbstractController
      * @OA\Tag(name="Admin API")
      *
      * @OA\RequestBody(
-     *      description="Data about basic chairs (For updating)",
+     *      description="Data about department (For updating)",
      *      required=true,
      *
      *      @OA\JsonContent(
      *          type="object",
      *
-     *          @OA\Property(property="type", type="string", example="__New_Test__"),
-     *          @OA\Property(property="title", type="string", example="__New_Test__"),
-     *          @OA\Property(property="price", type="integer", example="9999"),
-     *          @OA\Property(property="department_id", type="integer", example="9999")
+     *          @OA\Property(property="name", type="string", example="__New_Test__"),
+     *          @OA\Property(property="code", type="integer", example="101"),
      *      )
      * )
      */
-    #[Route(path: 'api/bases/{id}', methods: ['PUT'])]
+    #[Route(path: 'api/departments/{id}', methods: ['PUT'])]
     public function update(Request $request, int $id): JsonResponse
     {
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
-            if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['department_id'])) {
-                return new JsonResponse($this->baseService->update($id, $requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']));
+            if (isset($requestJSON['name']) && isset($requestJSON['code'])) {
+                return new JsonResponse($this->departmentService->update($id, $requestJSON['name'], $requestJSON['code']));
             }
 
             return new JsonResponse(
-                ['error' => 'Invalid JSON format. "type", "title", "price" and "department_id" fields are required.'],
+                ['error' => 'Invalid JSON format. "name" and "code" fields are required.'],
                 400,
                 [],
                 true
@@ -164,14 +160,14 @@ class BaseController extends AbstractController
     /**
      * @OA\Response(
      *     response=200,
-     *     description="Delete information about base",
+     *     description="Delete information about department",
      * )
      *
      * @OA\Tag(name="Admin API")
      */
-    #[Route(path: 'api/bases/{id}', methods: ['DELETE'])]
+    #[Route(path: 'api/departments/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        return new JsonResponse($this->baseService->delete($id));
+        return new JsonResponse($this->departmentService->delete($id));
     }
 }

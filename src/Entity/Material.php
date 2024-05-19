@@ -14,7 +14,7 @@ class Material
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Category::class, inversedBy: 'materials')]
+    #[ORM\ManyToOne(targetEntity: Category::class)]
     private Category $category;
 
     #[ORM\Column(type: 'string', length: 255)]
@@ -25,6 +25,9 @@ class Material
 
     #[ORM\Column(type: 'decimal', precision: 5)]
     private float $price;
+
+    #[ORM\Column(type: 'integer', precision: 5)]
+    private int $categoryCode;
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
@@ -57,6 +60,11 @@ class Material
         return $this->price;
     }
 
+    public function getCategoryCode(): int
+    {
+        return $this->categoryCode;
+    }
+
     public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
@@ -87,6 +95,12 @@ class Material
     public function setPrice(float $price): self
     {
         $this->price = $price;
+        return $this;
+    }
+
+    public function setCategoryCode(int $categoryCode): self
+    {
+        $this->categoryCode = $categoryCode;
         return $this;
     }
 

@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\OrderRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
@@ -16,11 +14,8 @@ class Order
     #[ORM\Column(type: 'integer')]
     private int $id;
 
-    #[ORM\ManyToOne(targetEntity: Status::class, inversedBy: 'orders')]
+    #[ORM\ManyToOne(targetEntity: Status::class, fetch: 'LAZY')]
     private ?Status $status;
-
-    #[ORM\OneToMany(targetEntity: ProductOrder::class, mappedBy: 'order')]
-    private ArrayCollection $productsOrder;
 
     #[ORM\Column(type: 'integer')]
     private string $statusId;
@@ -34,19 +29,9 @@ class Order
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $updatedAt;
 
-    public function __construct()
-    {
-        $this->productsOrder = new ArrayCollection();
-    }
-
     public function getStatus(): ?Status
     {
         return $this->status;
-    }
-
-    public function getProducts(): Collection
-    {
-        return $this->productsOrder;
     }
 
     public function getId(): ?int
@@ -86,6 +71,7 @@ class Order
     public function setStatus(?Status $status): self
     {
         $this->status = $status;
+
         return $this;
     }
 

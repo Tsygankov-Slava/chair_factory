@@ -3,8 +3,8 @@
 namespace App\Tests\Service;
 
 use App\Entity\Base;
-use App\Model\BasicChairArrayItem;
-use App\Model\BasicChairArrayResponse;
+use App\Model\BaseArrayItem;
+use App\Model\ArrayResponse;
 use App\Repository\BaseRepository;
 use App\Service\BaseService;
 use App\Tests\AbstractTestCase;
@@ -22,7 +22,7 @@ class BasicChairServiceTest extends AbstractTestCase
             ->willReturn([$basicChair]);
 
         $service = new BaseService($repository);
-        $expected = new BasicChairArrayResponse([new BasicChairArrayItem(3, "Test", 1000)]);
+        $expected = new ArrayResponse([new BaseArrayItem(3, "Test", 1000)]);
 
         $this->assertEquals($expected, $service->show());
     }

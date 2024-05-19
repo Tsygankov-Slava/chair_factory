@@ -14,7 +14,7 @@ class ProductOrder
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'productsOrder')]
+    #[ORM\ManyToOne(targetEntity: Order::class, fetch: 'LAZY')]
     private Order $order;
 
     #[ORM\Column(type: 'json')]
