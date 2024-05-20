@@ -2,12 +2,12 @@
 
 namespace App\Model;
 
-class CategoryArrayItem implements \JsonSerializable
+class OrderArrayItem implements \JsonSerializable
 {
     public function __construct(
         private readonly int $id,
-        private readonly string $title,
-        private readonly int $baseId,
+        private readonly float $totalPrice,
+        private readonly int $statusId,
         private readonly \DateTimeInterface $createdAt,
         private readonly \DateTimeInterface $updatedAt)
     {
@@ -17,8 +17,8 @@ class CategoryArrayItem implements \JsonSerializable
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'base_id' => $this->baseId,
+            'total_price' => $this->totalPrice,
+            'status_id' => $this->statusId,
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
         ];

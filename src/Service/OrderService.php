@@ -2,46 +2,60 @@
 
 namespace App\Service;
 
+use App\Controller\EntityFieldHelper;
 use App\Entity\Order;
-use App\Exception\NotFoundException;
-use App\Model\ChairInOrder;
+use App\Model\ArrayResponse;
 use App\Model\IdResponse;
 use App\Model\OrderArrayItem;
-use App\Model\OrderArrayResponse;
-use App\Repository\BaseRepository;
-use App\Repository\MaterialRepository;
-use App\Repository\ChairUpholsteryMaterialRepository;
 use App\Repository\OrderRepository;
-use DateTime;
+use App\Repository\StatusRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class OrderService
 {
     public function __construct(
-        private readonly OrderRepository                   $orderRepository,
-        private readonly BaseRepository                    $basicChairRepository,
-        private readonly MaterialRepository                $chairBaseMaterialRepository,
-        private readonly EntityManagerInterface            $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly StatusRepository $statusRepository,
+        private readonly OrderRepository $orderRepository
     ) {
     }
 
-    public function show(int $userId): OrderArrayResponse|NotFoundException
+    public function show(string $order, string $orderField, int $limit, int $offset): ArrayResponse
     {
-        $orders = $this->orderRepository->findBy(['userId' => $userId]);
-        if ($orders) {
-            return new NotFoundException("This user doesn't have any orders");
+        if (!in_array($order, ['ASC', 'DESC'])) {
+            throw new \InvalidArgumentException('Invalid order parameter');
         }
-        return new OrderArrayResponse(array_map(
+
+        $helper = new EntityFieldHelper($this->entityManager);
+        $fields = $helper->getEntityFields(Order::class);
+
+        if (!in_array($orderField, $fields)) {
+            throw new \InvalidArgumentException('Invalid order_field parameter');
+        }
+
+        $query = $this->entityManager->createQuery(
+            'SELECT order_, status
+             FROM App\Entity\Order order_
+             JOIN order_.status status
+             ORDER BY order_.'.$orderField.' '.$order
+        )
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        $orders = $query->getResult();
+
+        if (empty($orders)) {
+            error_log('No data found');
+        } else {
+            error_log('Data found: '.print_r($orders, true));
+        }
+
+        return new ArrayResponse(array_map(
             fn (Order $order) => new OrderArrayItem(
                 $order->getId(),
-                $order->getStatus(),
-                $this->getChairInOrderArray(
-                    $order->getBasicChairIdArray(),
-                    $order->getChairBaseMaterialIdArray(),
-                    $order->getChairUpholsteryMaterialArray(),
-                    $order->getChairsQuantityArray()
-                ),
-                $order->getPrice(),
+                $order->getTotalPrice(),
+                $order->getStatus()->getId(),
                 $order->getCreatedAt(),
                 $order->getUpdatedAt()
             ),
@@ -49,31 +63,18 @@ class OrderService
         ));
     }
 
-    public function create(
-        int $userId,
-        string $status,
-        array $basicChairIdArray,
-        array $chairBaseMaterialIdArray,
-        array $chairUpholsteryMaterialIdArray,
-        array $chairsQuantityArray
-    ): IdResponse {
+    public function create(float $totalPrice, int $statusId): IdResponse
+    {
+        // TODO: Сhecksums process
         $order = new Order();
-        $order->setUserId($userId);
+        $order->setTotalPrice($totalPrice);
+        $status = $this->statusRepository->find($statusId);
+        if (null === $status) {
+            throw new NotFoundHttpException('Status not found');
+        }
         $order->setStatus($status);
-        $order->setBasicChairIdArray($basicChairIdArray);
-        $order->setChairBaseMaterialIdArray($chairBaseMaterialIdArray);
-        $order->setChairUpholsteryMaterialArray($chairUpholsteryMaterialIdArray);
-        $order->setChairsQuantityArray($chairsQuantityArray);
-        $order->setPrice($this->countPrice(
-            $basicChairIdArray,
-            $chairBaseMaterialIdArray,
-            $chairUpholsteryMaterialIdArray,
-            $chairsQuantityArray
-        ));
-        $timeNow = new DateTime();
-        $order ->setCreatedAt($timeNow);
-        $order ->setUpdatedAt($timeNow);
-
+        $order->setCreatedAt(new \DateTime());
+        $order->setUpdatedAt(new \DateTime());
 
         $this->entityManager->persist($order);
         $this->entityManager->flush();
@@ -81,56 +82,42 @@ class OrderService
         return new IdResponse($order->getId());
     }
 
-    private function countPrice(
-        array $basicChairIdArray,
-        array $chairBaseMaterialIdArray,
-        array $chairUpholsteryMaterialIdArray,
-        array $chairsQuantityArray
-    ): float {
-        $price = 0;
-        for ($i = 0; $i < count($basicChairIdArray); $i++) {
-            $basicChairId = $basicChairIdArray[$i];
-            $basicChairPrice = ($this->basicChairRepository->find($basicChairId))->getPrice();
-
-            $chairBaseMaterialId = $chairBaseMaterialIdArray[$i];
-            $chairBaseMaterialPrice = ($this->chairBaseMaterialRepository->find($chairBaseMaterialId))->getPrice();
-
-            $chairUpholsteryMaterialId = $chairUpholsteryMaterialIdArray[$i];
-            $chairUpholsteryMaterialPrice = ($this->chairUpholsteryMaterialRepository->find($chairUpholsteryMaterialId))->getPrice();
-
-            $chairsQuantity = $chairsQuantityArray[$i];
-
-            $price += ($basicChairPrice + $chairBaseMaterialPrice + $chairUpholsteryMaterialPrice) * $chairsQuantity;
+    public function update(int $id, ?float $totalPrice, ?int $statusId): IdResponse
+    {
+        $order = $this->orderRepository->find($id);
+        if (null === $order) {
+            throw new NotFoundHttpException('The order was not found.');
         }
-        return $price;
+
+        if (null !== $statusId) {
+            $status = $this->statusRepository->find($statusId);
+            if (null === $status) {
+                throw new NotFoundHttpException('Status not found');
+            }
+            $order->setStatus($status);
+        }
+
+        if (null !== $totalPrice) {
+            $order->setTotalPrice($totalPrice);
+        }
+
+        $order->setUpdatedAt(new \DateTime());
+
+        $this->entityManager->flush();
+
+        return new IdResponse($order->getId());
     }
 
-    /*
-     * @return ChairInOrder[]
-     */
-    private function getChairInOrderArray(
-        array $basicChairIdArray,
-        array $chairBaseMaterialIdArray,
-        array $chairUpholsteryMaterialArray,
-        array $chairsQuantityArray
-    ): array {
-        /*
-         * @var ChairInOrder[] $result
-         */
-        $result = [];
-        for ($i = 0; $i < count($basicChairIdArray); $i++) {
-            $basicChairId = $basicChairIdArray[$i];
-            $basicChair = $this->basicChairRepository->find($basicChairId);
-
-            $chairBaseMaterialId = $chairBaseMaterialIdArray[$i];
-            $chairBaseMaterial = $this->chairBaseMaterialRepository->find($chairBaseMaterialId);
-
-            $chairUpholsteryMaterialId = $chairUpholsteryMaterialArray[$i];
-            $chairUpholsteryMaterial = $this->chairUpholsteryMaterialRepository->find($chairUpholsteryMaterialId);
-
-            $chairsQuantityId = $chairsQuantityArray[$i];
-            $result[] = new ChairInOrder($basicChair->getType(), $chairBaseMaterial->getName(), $chairUpholsteryMaterial->getName(), $chairsQuantityId);
+    public function delete(int $id): IdResponse
+    {
+        $order = $this->orderRepository->find($id);
+        if (null === $order) {
+            throw new NotFoundHttpException('The order was not found.');
         }
-        return $result;
+
+        $this->entityManager->remove($order);
+        $this->entityManager->flush();
+
+        return new IdResponse($id);
     }
 }

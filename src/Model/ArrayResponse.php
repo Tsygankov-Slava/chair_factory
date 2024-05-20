@@ -5,12 +5,12 @@ namespace App\Model;
 class ArrayResponse implements \JsonSerializable
 {
     /*
-     * @var BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[]
+     * @var BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[]|StatusArrayItem[]|OrderArrayItem[]|ProductOrderArrayItem[]
      */
     private array $items;
 
     /*
-     * @param BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[] $items
+     * @param BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[]|StatusArrayItem[]|OrderArrayItem[]|ProductOrderArrayItem[] $items
      */
     public function __construct(array $items)
     {
@@ -18,7 +18,7 @@ class ArrayResponse implements \JsonSerializable
     }
 
     /*
-     * @return BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[]
+     * @return BaseArrayItem[]|DepartmentArrayItem[]|CategoryArrayItem[]|MaterialArrayItem[]|StatusArrayItem[]|OrderArrayItem[]|ProductOrderArrayItem[]
      */
     public function jsonSerialize(): array
     {

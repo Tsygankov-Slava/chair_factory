@@ -2,8 +2,6 @@
 
 namespace App\Model;
 
-use App\Entity\Department;
-
 class MaterialArrayItem implements \JsonSerializable
 {
     public function __construct(

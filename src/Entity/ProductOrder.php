@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use App\Model\BaseArrayItem;
+use App\Model\MaterialArrayItem;
 use App\Repository\ProductOrderRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -18,16 +20,20 @@ class ProductOrder
     private Order $order;
 
     #[ORM\Column(type: 'json')]
-    private int $base;
+    private BaseArrayItem $base;
 
     #[ORM\Column(type: 'json')]
-    private int $material;
+    /* @var MaterialArrayItem[] $material */
+    private array $material;
 
     #[ORM\Column(type: 'decimal', precision: 5)]
     private float $price;
 
     #[ORM\Column(type: 'integer')]
-    private float $quantity;
+    private int $quantity;
+
+    #[ORM\Column(type: 'decimal', precision: 5)]
+    private float $totalPrice;
 
     #[ORM\Column(type: 'datetime')]
     private \DateTimeInterface $createdAt;
@@ -45,12 +51,15 @@ class ProductOrder
         return $this->order;
     }
 
-    public function getBase(): int
+    public function getBase(): BaseArrayItem
     {
         return $this->base;
     }
 
-    public function getMaterial(): int
+    /*
+     * @return MaterialArrayItem[]
+     */
+    public function getMaterial(): array
     {
         return $this->material;
     }
@@ -60,9 +69,14 @@ class ProductOrder
         return $this->price;
     }
 
-    public function getQuantity(): float
+    public function getQuantity(): int
     {
         return $this->quantity;
+    }
+
+    public function getTotalPrice(): float
+    {
+        return $this->totalPrice;
     }
 
     public function getCreatedAt(): \DateTimeInterface
@@ -78,42 +92,59 @@ class ProductOrder
     public function setOrder(?Order $order): self
     {
         $this->order = $order;
+
         return $this;
     }
 
-    public function setBase(int $base): self
+    public function setBase(BaseArrayItem $base): self
     {
         $this->base = $base;
+
         return $this;
     }
 
-    public function setMaterial(int $material): self
+    /*
+     * @param MaterialArrayItem[] $material
+     */
+    public function setMaterial(array $material): self
     {
         $this->material = $material;
+
         return $this;
     }
 
     public function setPrice(float $price): self
     {
         $this->price = $price;
+
         return $this;
     }
 
     public function setQuantity(float $quantity): self
     {
         $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function setTotalPrice(float $totalPrice): self
+    {
+        $this->totalPrice = $totalPrice;
+
         return $this;
     }
 
     public function setCreatedAt(\DateTimeInterface $createdAt): self
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
     public function setUpdatedAt(\DateTimeInterface $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+
         return $this;
     }
 }
