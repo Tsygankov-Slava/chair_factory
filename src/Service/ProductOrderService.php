@@ -15,20 +15,32 @@ use App\Repository\BaseRepository;
 use App\Repository\MaterialRepository;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ProductOrderService
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager,
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
         private readonly OrderRepository $orderRepository,
         private readonly BaseRepository $baseRepository,
-        private readonly MaterialRepository $materialRepository)
-    {
+        private readonly MaterialRepository $materialRepository,
+        private readonly LoggerInterface $logger
+    ) {
     }
 
     public function show(string $order, string $orderField, int $limit, int $offset, int $orderId): ArrayResponse
     {
+        $this->logger->info('Executing show method', [
+            'order' => $order,
+            'orderField' => $orderField,
+            'limit' => $limit,
+            'offset' => $offset,
+            'orderId' => $orderId
+        ]);
+
         if (!in_array($order, ['ASC', 'DESC'])) {
+            $this->logger->error('Invalid order parameter', ['order' => $order]);
             throw new \InvalidArgumentException('Invalid order parameter');
         }
 
@@ -36,11 +48,13 @@ class ProductOrderService
         $fields = $helper->getEntityFields(ProductOrder::class);
 
         if (!in_array($orderField, $fields)) {
+            $this->logger->error('Invalid order_field parameter', ['orderField' => $orderField]);
             throw new \InvalidArgumentException('Invalid order_field parameter');
         }
 
         $orderInDB = $this->orderRepository->find($orderId);
         if (null === $orderInDB) {
+            $this->logger->error('Order not found', ['orderId' => $orderId]);
             throw new NotFoundHttpException('Order not found');
         }
 
@@ -59,25 +73,56 @@ class ProductOrderService
             ->getResult();
 
         if (empty($productsOrder)) {
-            error_log('No data found');
+            $this->logger->warning('No data found');
         } else {
-            error_log('Data found: '.print_r($productsOrder, true));
+            $this->logger->info('Data found', ['data' => $productsOrder]);
         }
 
-        // TODO: Generate ArrayResponse
-        return new ArrayResponse(array_map(function ($productOrder) {}, $productsOrder));
+        $response = new ArrayResponse(array_map(function ($productOrder) {
+            return new ProductOrderArrayItem(
+                $productOrder['id'],
+                $productOrder['price'],
+                $productOrder['quantity'],
+                $productOrder['totalPrice'],
+                new BaseArrayItem(
+                    $productOrder['base']->getId(),
+                    $productOrder['base']->getType(),
+                    $productOrder['base']->getTitle(),
+                    $productOrder['base']->getPrice(),
+                    $productOrder['base']->getDepartment()->getId(),
+                    $productOrder['base']->getCreatedAt(),
+                    $productOrder['base']->getUpdatedAt()
+                ),
+                $productOrder['createdAt'],
+                $productOrder['updatedAt']
+            );
+        }, $productsOrder));
+
+        $this->logger->info('show method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function create(int $order_id, int $base_id, array $materials, float $price, int $quantity): IdResponse
     {
+        $this->logger->info('Executing create method', [
+            'order_id' => $order_id,
+            'base_id' => $base_id,
+            'materials' => $materials,
+            'price' => $price,
+            'quantity' => $quantity
+        ]);
+
         $productOrder = new ProductOrder();
         $order = $this->orderRepository->find($order_id);
         if (null === $order) {
+            $this->logger->error('Order not found', ['order_id' => $order_id]);
             throw new NotFoundException('Order not found');
         }
         $productOrder->setOrder($order);
         $base = $this->baseRepository->find($base_id);
         if (null === $base) {
+            $this->logger->error('Base not found', ['base_id' => $base_id]);
             throw new NotFoundException('Base not found');
         }
         $productOrder->setBase(
@@ -88,12 +133,15 @@ class ProductOrderService
                 $base->getPrice(),
                 $base->getDepartment()->getId(),
                 $base->getCreatedAt(),
-                $base->getUpdatedAt()));
+                $base->getUpdatedAt()
+            )
+        );
 
         $materialObjects = [];
         foreach ($materials as $materialId) {
             $material = $this->materialRepository->find($materialId);
             if (null === $material) {
+                $this->logger->error("Material not found", ['materialId' => $materialId]);
                 throw new NotFoundException("Material with $materialId not found");
             }
             $materialObjects[] = $material;
@@ -121,6 +169,9 @@ class ProductOrderService
         $this->entityManager->persist($productOrder);
         $this->entityManager->flush();
 
-        return new IdResponse($productOrder->getId());
+        $response = new IdResponse($productOrder->getId());
+        $this->logger->info('create method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 }

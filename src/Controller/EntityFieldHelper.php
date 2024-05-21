@@ -13,7 +13,6 @@ class EntityFieldHelper
     public function getEntityFields(string $entityClass): array
     {
         $metadata = $this->entityManager->getClassMetadata($entityClass);
-
         return $metadata->getFieldNames();
     }
 }

@@ -3,16 +3,17 @@
 namespace App\Controller;
 
 use App\Service\DepartmentService;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use OpenApi\Annotations as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Nelmio\ApiDocBundle\Annotation\Model;
-use OpenApi\Annotations as OA;
 
 class DepartmentController extends AbstractController
 {
-    public function __construct(private readonly DepartmentService $departmentService)
+    public function __construct(private readonly DepartmentService $departmentService, private readonly LoggerInterface $logger)
     {
     }
 
@@ -43,11 +44,18 @@ class DepartmentController extends AbstractController
     #[Route(path: 'api/departments', methods: ['GET'])]
     public function show(Request $request): JsonResponse
     {
+        $this->logger->info('Handling show request for departments');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['order']) and isset($requestJSON['order_field']) and isset($requestJSON['limit']) and isset($requestJSON['offset'])) {
-                return new JsonResponse($this->departmentService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']));
+                $this->logger->info('All required fields are present');
+                $response = $this->departmentService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "order", "order_field", "limit" and "offset" fields are required.'],
@@ -56,6 +64,8 @@ class DepartmentController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -90,11 +100,18 @@ class DepartmentController extends AbstractController
     #[Route(path: 'api/departments', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->logger->info('Handling create request for department');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['name']) && isset($requestJSON['code'])) {
-                return new JsonResponse($this->departmentService->create($requestJSON['name'], $requestJSON['code']));
+                $this->logger->info('All required fields are present');
+                $response = $this->departmentService->create($requestJSON['name'], $requestJSON['code']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "name" and "code" fields are required.'],
@@ -103,6 +120,8 @@ class DepartmentController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -135,11 +154,18 @@ class DepartmentController extends AbstractController
     #[Route(path: 'api/departments/{id}', methods: ['PUT'])]
     public function update(Request $request, int $id): JsonResponse
     {
+        $this->logger->info('Handling update request for department', ['id' => $id]);
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['name']) && isset($requestJSON['code'])) {
-                return new JsonResponse($this->departmentService->update($id, $requestJSON['name'], $requestJSON['code']));
+                $this->logger->info('All required fields are present');
+                $response = $this->departmentService->update($id, $requestJSON['name'], $requestJSON['code']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "name" and "code" fields are required.'],
@@ -148,6 +174,8 @@ class DepartmentController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -168,6 +196,9 @@ class DepartmentController extends AbstractController
     #[Route(path: 'api/departments/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        return new JsonResponse($this->departmentService->delete($id));
+        $this->logger->info('Handling delete request for department', ['id' => $id]);
+        $response = $this->departmentService->delete($id);
+        $this->logger->info('Response generated successfully', ['response' => $response]);
+        return new JsonResponse($response);
     }
 }

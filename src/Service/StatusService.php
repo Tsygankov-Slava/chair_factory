@@ -9,19 +9,29 @@ use App\Model\IdResponse;
 use App\Model\StatusArrayItem;
 use App\Repository\StatusRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class StatusService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly StatusRepository $statusRepository
+        private readonly StatusRepository $statusRepository,
+        private readonly LoggerInterface $logger
     ) {
     }
 
     public function show(string $order, string $orderField, int $limit, int $offset): ArrayResponse
     {
+        $this->logger->info('Executing show method', [
+            'order' => $order,
+            'orderField' => $orderField,
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
         if (!in_array($order, ['ASC', 'DESC'])) {
+            $this->logger->error('Invalid order parameter', ['order' => $order]);
             throw new \InvalidArgumentException('Invalid order parameter');
         }
 
@@ -29,6 +39,7 @@ class StatusService
         $fields = $helper->getEntityFields(Status::class);
 
         if (!in_array($orderField, $fields)) {
+            $this->logger->error('Invalid order_field parameter', ['orderField' => $orderField]);
             throw new \InvalidArgumentException('Invalid order_field parameter');
         }
 
@@ -37,17 +48,17 @@ class StatusService
              FROM App\Entity\Status status
              ORDER BY status.'.$orderField.' '.$order
         )->setMaxResults($limit)
-         ->setFirstResult($offset);
+            ->setFirstResult($offset);
 
         $statuses = $query->getResult();
 
         if (empty($statuses)) {
-            error_log('No data found');
+            $this->logger->warning('No data found');
         } else {
-            error_log('Data found: '.print_r($statuses, true));
+            $this->logger->info('Data found', ['data' => $statuses]);
         }
 
-        return new ArrayResponse(array_map(
+        $response = new ArrayResponse(array_map(
             fn (Status $status) => new StatusArrayItem(
                 $status->getId(),
                 $status->getCode(),
@@ -57,10 +68,19 @@ class StatusService
             ),
             $statuses
         ));
+
+        $this->logger->info('show method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function create(string $code, string $description): IdResponse
     {
+        $this->logger->info('Executing create method', [
+            'code' => $code,
+            'description' => $description,
+        ]);
+
         $status = new Status();
         $status->setCode($code);
         $status->setDescription($description);
@@ -70,13 +90,23 @@ class StatusService
         $this->entityManager->persist($status);
         $this->entityManager->flush();
 
-        return new IdResponse($status->getId());
+        $response = new IdResponse($status->getId());
+        $this->logger->info('create method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function update(int $id, ?string $code, ?string $description): IdResponse
     {
+        $this->logger->info('Executing update method', [
+            'id' => $id,
+            'code' => $code,
+            'description' => $description,
+        ]);
+
         $status = $this->statusRepository->find($id);
         if (null === $status) {
+            $this->logger->error('The status was not found', ['id' => $id]);
             throw new NotFoundHttpException('The status was not found.');
         }
 
@@ -91,19 +121,28 @@ class StatusService
 
         $this->entityManager->flush();
 
-        return new IdResponse($status->getId());
+        $response = new IdResponse($status->getId());
+        $this->logger->info('update method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function delete(int $id): IdResponse
     {
+        $this->logger->info('Executing delete method', ['id' => $id]);
+
         $status = $this->statusRepository->find($id);
         if (null === $status) {
+            $this->logger->error('The status was not found', ['id' => $id]);
             throw new NotFoundHttpException('The status was not found.');
         }
 
         $this->entityManager->remove($status);
         $this->entityManager->flush();
 
-        return new IdResponse($id);
+        $response = new IdResponse($id);
+        $this->logger->info('delete method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 }

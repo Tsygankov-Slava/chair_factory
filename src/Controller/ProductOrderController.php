@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Service\ProductOrderService;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Annotations as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ProductOrderController extends AbstractController
 {
-    public function __construct(private readonly ProductOrderService $productOrderService)
+    public function __construct(private readonly ProductOrderService $productOrderService, private readonly LoggerInterface $logger)
     {
     }
 
@@ -44,11 +45,19 @@ class ProductOrderController extends AbstractController
     #[Route(path: 'api/products_order', methods: ['GET'])]
     public function show(Request $request): JsonResponse
     {
+        $this->logger->info('Handling show request for product orders');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['order']) and isset($requestJSON['order_field']) and isset($requestJSON['limit']) and isset($requestJSON['offset']) and isset($requestJSON['order_id'])) {
-                return new JsonResponse($this->productOrderService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset'], $requestJSON['order_id']));
+                $this->logger->info('All required fields are present');
+                $response = $this->productOrderService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset'], $requestJSON['order_id']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "order", "order_field", "limit", "offset" and "order_id" fields are required.'],
@@ -57,6 +66,8 @@ class ProductOrderController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -94,15 +105,22 @@ class ProductOrderController extends AbstractController
     #[Route(path: 'api/products_order', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->logger->info('Handling create request for product order');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['order_id']) && isset($requestJSON['base_id'])
                 && isset($requestJSON['materials']) && isset($requestJSON['price'])
                 && isset($requestJSON['quantity'])) {
-                return new JsonResponse($this->productOrderService->create($requestJSON['order_id'],
-                    $requestJSON['base_id'], $requestJSON['materials'],
-                    $requestJSON['price'], $requestJSON['quantity']));
+                $this->logger->info('All required fields are present');
+                $response = $this->productOrderService->create($requestJSON['order_id'], $requestJSON['base_id'],
+                    $requestJSON['materials'], $requestJSON['price'], $requestJSON['quantity']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "code" and "description" fields are required.'],
@@ -111,6 +129,8 @@ class ProductOrderController extends AbstractController
                 false
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],

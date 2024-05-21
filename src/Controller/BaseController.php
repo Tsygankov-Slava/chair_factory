@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Service\BaseService;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Annotations as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class BaseController extends AbstractController
 {
-    public function __construct(private readonly BaseService $baseService)
+    public function __construct(private readonly BaseService $baseService, private readonly LoggerInterface $logger)
     {
     }
 
@@ -43,11 +44,18 @@ class BaseController extends AbstractController
     #[Route(path: 'api/bases', methods: ['GET'])]
     public function show(Request $request): JsonResponse
     {
+        $this->logger->info('Handling show request');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['order']) and isset($requestJSON['order_field']) and isset($requestJSON['limit']) and isset($requestJSON['offset'])) {
-                return new JsonResponse($this->baseService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']));
+                $this->logger->info('All required fields are present');
+                $response = $this->baseService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "order", "order_field", "limit" and "offset" fields are required.'],
@@ -56,6 +64,8 @@ class BaseController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -92,11 +102,18 @@ class BaseController extends AbstractController
     #[Route(path: 'api/bases', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->logger->info('Handling create request');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['department_id'])) {
-                return new JsonResponse($this->baseService->create($requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']));
+                $this->logger->info('All required fields are present');
+                $response = $this->baseService->create($requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "type" and "price" fields are required.'],
@@ -105,6 +122,8 @@ class BaseController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -139,11 +158,18 @@ class BaseController extends AbstractController
     #[Route(path: 'api/bases/{id}', methods: ['PUT'])]
     public function update(Request $request, int $id): JsonResponse
     {
+        $this->logger->info('Handling update request', ['id' => $id]);
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['department_id'])) {
-                return new JsonResponse($this->baseService->update($id, $requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']));
+                $this->logger->info('All required fields are present');
+                $response = $this->baseService->update($id, $requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['department_id']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "type", "title", "price" and "department_id" fields are required.'],
@@ -152,6 +178,8 @@ class BaseController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -172,6 +200,9 @@ class BaseController extends AbstractController
     #[Route(path: 'api/bases/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        return new JsonResponse($this->baseService->delete($id));
+        $this->logger->info('Handling delete request', ['id' => $id]);
+        $response = $this->baseService->delete($id);
+        $this->logger->info('Response generated successfully', ['response' => $response]);
+        return new JsonResponse($response);
     }
 }

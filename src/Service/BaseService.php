@@ -10,6 +10,7 @@ use App\Model\IdResponse;
 use App\Repository\BaseRepository;
 use App\Repository\DepartmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BaseService
@@ -17,13 +18,17 @@ class BaseService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly BaseRepository $baseRepository,
-        private readonly DepartmentRepository $departmentRepository
+        private readonly DepartmentRepository $departmentRepository,
+        private readonly LoggerInterface $logger
     ) {
     }
 
     public function show(string $order, string $orderField, int $limit, int $offset): ArrayResponse
     {
+        $this->logger->info('Executing show method', ['order' => $order, 'orderField' => $orderField, 'limit' => $limit, 'offset' => $offset]);
+
         if (!in_array($order, ['ASC', 'DESC'])) {
+            $this->logger->error('Invalid order parameter', ['order' => $order]);
             throw new \InvalidArgumentException('Invalid order parameter');
         }
 
@@ -31,6 +36,7 @@ class BaseService
         $fields = $helper->getEntityFields(Base::class);
 
         if (!in_array($orderField, $fields)) {
+            $this->logger->error('Invalid order_field parameter', ['orderField' => $orderField]);
             throw new \InvalidArgumentException('Invalid order_field parameter');
         }
 
@@ -46,12 +52,12 @@ class BaseService
         $bases = $query->getResult();
 
         if (empty($bases)) {
-            error_log('No data found');
+            $this->logger->warning('No data found');
         } else {
-            error_log('Data found: '.print_r($bases, true));
+            $this->logger->info('Data found', ['data' => $bases]);
         }
 
-        return new ArrayResponse(array_map(
+        $response = new ArrayResponse(array_map(
             fn (Base $base) => new BaseArrayItem(
                 $base->getId(),
                 $base->getType(),
@@ -63,16 +69,24 @@ class BaseService
             ),
             $bases
         ));
+
+        $this->logger->info('show method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function create(string $type, string $title, float $price, int $departmentId): IdResponse
     {
+        $this->logger->info('Executing create method', ['type' => $type, 'title' => $title, 'price' => $price, 'departmentId' => $departmentId]);
+
         $base = new Base();
         $base->setType($type);
         $base->setTitle($title);
         $base->setPrice($price);
+
         $department = $this->departmentRepository->find($departmentId);
         if (null === $department) {
+            $this->logger->error('Department not found', ['departmentId' => $departmentId]);
             throw new NotFoundHttpException('Department not found');
         }
         $base->setDepartment($department);
@@ -82,13 +96,19 @@ class BaseService
         $this->entityManager->persist($base);
         $this->entityManager->flush();
 
-        return new IdResponse($base->getId());
+        $response = new IdResponse($base->getId());
+        $this->logger->info('create method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function update(int $id, ?string $type, ?string $title, ?float $price, ?int $departmentId): IdResponse
     {
+        $this->logger->info('Executing update method', ['id' => $id, 'type' => $type, 'title' => $title, 'price' => $price, 'departmentId' => $departmentId]);
+
         $base = $this->baseRepository->find($id);
         if (null === $base) {
+            $this->logger->error('Base not found', ['id' => $id]);
             throw new NotFoundHttpException('The base was not found.');
         }
 
@@ -104,28 +124,37 @@ class BaseService
         if (null !== $departmentId) {
             $department = $this->departmentRepository->find($departmentId);
             if (null === $department) {
+                $this->logger->error('Department not found', ['departmentId' => $departmentId]);
                 throw new NotFoundHttpException('Department not found');
             }
             $base->setDepartment($department);
         }
 
         $base->setUpdatedAt(new \DateTime());
-
         $this->entityManager->flush();
 
-        return new IdResponse($base->getId());
+        $response = new IdResponse($base->getId());
+        $this->logger->info('update method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function delete(int $id): IdResponse
     {
+        $this->logger->info('Executing delete method', ['id' => $id]);
+
         $base = $this->baseRepository->find($id);
         if (null === $base) {
+            $this->logger->error('Base not found', ['id' => $id]);
             throw new NotFoundHttpException('The base was not found.');
         }
 
         $this->entityManager->remove($base);
         $this->entityManager->flush();
 
-        return new IdResponse($id);
+        $response = new IdResponse($id);
+        $this->logger->info('delete method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 }

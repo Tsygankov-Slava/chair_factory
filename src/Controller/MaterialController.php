@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Service\MaterialService;
 use Nelmio\ApiDocBundle\Annotation\Model;
 use OpenApi\Annotations as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class MaterialController extends AbstractController
 {
-    public function __construct(private readonly MaterialService $materialService)
+    public function __construct(private readonly MaterialService $materialService, private readonly LoggerInterface $logger)
     {
     }
 
@@ -43,11 +44,18 @@ class MaterialController extends AbstractController
     #[Route(path: 'api/materials', methods: ['GET'])]
     public function show(Request $request): JsonResponse
     {
+        $this->logger->info('Handling show request for materials');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['order']) and isset($requestJSON['order_field']) and isset($requestJSON['limit']) and isset($requestJSON['offset'])) {
-                return new JsonResponse($this->materialService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']));
+                $this->logger->info('All required fields are present');
+                $response = $this->materialService->show($requestJSON['order'], $requestJSON['order_field'], $requestJSON['limit'], $requestJSON['offset']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "order", "order_field", "limit" and "offset" fields are required.'],
@@ -56,6 +64,8 @@ class MaterialController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -93,11 +103,18 @@ class MaterialController extends AbstractController
     #[Route(path: 'api/materials', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        $this->logger->info('Handling create request for material');
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['category_code']) && isset($requestJSON['category_id'])) {
-                return new JsonResponse($this->materialService->create($requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['category_code'], $requestJSON['category_id']));
+                $this->logger->info('All required fields are present');
+                $response = $this->materialService->create($requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['category_code'], $requestJSON['category_id']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "type", "title", "price", "category_code" and "category_id" fields are required.'],
@@ -106,6 +123,8 @@ class MaterialController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -141,11 +160,18 @@ class MaterialController extends AbstractController
     #[Route(path: 'api/materials/{id}', methods: ['PUT'])]
     public function update(Request $request, int $id): JsonResponse
     {
+        $this->logger->info('Handling update request for material', ['id' => $id]);
         $requestJSON = json_decode($request->getContent(), true);
         if (JSON_ERROR_NONE == json_last_error()) {
+            $this->logger->info('Valid JSON received', ['data' => $requestJSON]);
             if (isset($requestJSON['type']) && isset($requestJSON['title']) && isset($requestJSON['price']) && isset($requestJSON['category_code']) && isset($requestJSON['category_id'])) {
-                return new JsonResponse($this->materialService->update($id, $requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['category_code'], $requestJSON['category_id']));
+                $this->logger->info('All required fields are present');
+                $response = $this->materialService->update($id, $requestJSON['type'], $requestJSON['title'], $requestJSON['price'], $requestJSON['category_code'], $requestJSON['category_id']);
+                $this->logger->info('Response generated successfully', ['response' => $response]);
+                return new JsonResponse($response);
             }
+
+            $this->logger->warning('Missing required fields in JSON', ['data' => $requestJSON]);
 
             return new JsonResponse(
                 ['error' => 'Invalid JSON format. "type", "title", "price" and "department_id" fields are required.'],
@@ -154,6 +180,8 @@ class MaterialController extends AbstractController
                 true
             );
         }
+
+        $this->logger->error('Invalid JSON format received');
 
         return new JsonResponse(
             ['error' => 'Invalid JSON format.'],
@@ -174,6 +202,9 @@ class MaterialController extends AbstractController
     #[Route(path: 'api/materials/{id}', methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
-        return new JsonResponse($this->materialService->delete($id));
+        $this->logger->info('Handling delete request for material', ['id' => $id]);
+        $response = $this->materialService->delete($id);
+        $this->logger->info('Response generated successfully', ['response' => $response]);
+        return new JsonResponse($response);
     }
 }

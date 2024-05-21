@@ -10,6 +10,7 @@ use App\Model\MaterialArrayItem;
 use App\Repository\CategoryRepository;
 use App\Repository\MaterialRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class MaterialService
@@ -17,13 +18,22 @@ class MaterialService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly CategoryRepository $categoryRepository,
-        private readonly MaterialRepository $materialRepository
+        private readonly MaterialRepository $materialRepository,
+        private readonly LoggerInterface $logger
     ) {
     }
 
     public function show(string $order, string $orderField, int $limit, int $offset): ArrayResponse
     {
+        $this->logger->info('Executing show method', [
+            'order' => $order,
+            'orderField' => $orderField,
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+
         if (!in_array($order, ['ASC', 'DESC'])) {
+            $this->logger->error('Invalid order parameter', ['order' => $order]);
             throw new \InvalidArgumentException('Invalid order parameter');
         }
 
@@ -31,6 +41,7 @@ class MaterialService
         $fields = $helper->getEntityFields(Material::class);
 
         if (!in_array($orderField, $fields)) {
+            $this->logger->error('Invalid order_field parameter', ['orderField' => $orderField]);
             throw new \InvalidArgumentException('Invalid order_field parameter');
         }
 
@@ -48,12 +59,12 @@ class MaterialService
         $materials = $query->getResult();
 
         if (empty($materials)) {
-            error_log('No data found');
+            $this->logger->warning('No data found');
         } else {
-            error_log('Data found: '.print_r($materials, true));
+            $this->logger->info('Data found', ['data' => $materials]);
         }
 
-        return new ArrayResponse(array_map(
+        $response = new ArrayResponse(array_map(
             fn (Material $material) => new MaterialArrayItem(
                 $material->getId(),
                 $material->getType(),
@@ -66,10 +77,22 @@ class MaterialService
             ),
             $materials
         ));
+
+        $this->logger->info('show method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function create(string $type, string $title, float $price, int $categoryCode, int $categoryId): IdResponse
     {
+        $this->logger->info('Executing create method', [
+            'type' => $type,
+            'title' => $title,
+            'price' => $price,
+            'categoryCode' => $categoryCode,
+            'categoryId' => $categoryId,
+        ]);
+
         $material = new Material();
         $material->setType($type);
         $material->setTitle($title);
@@ -77,6 +100,7 @@ class MaterialService
         $material->setCategoryCode($categoryCode);
         $category = $this->categoryRepository->find($categoryId);
         if (null === $category) {
+            $this->logger->error('Category not found', ['categoryId' => $categoryId]);
             throw new NotFoundHttpException('Category not found');
         }
         $material->setCategory($category);
@@ -86,13 +110,26 @@ class MaterialService
         $this->entityManager->persist($material);
         $this->entityManager->flush();
 
-        return new IdResponse($material->getId());
+        $response = new IdResponse($material->getId());
+        $this->logger->info('create method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function update(int $id, ?string $type, ?string $title, ?float $price, ?int $categoryCode, ?int $categoryId): IdResponse
     {
+        $this->logger->info('Executing update method', [
+            'id' => $id,
+            'type' => $type,
+            'title' => $title,
+            'price' => $price,
+            'categoryCode' => $categoryCode,
+            'categoryId' => $categoryId,
+        ]);
+
         $material = $this->materialRepository->find($id);
         if (null === $material) {
+            $this->logger->error('Material not found', ['id' => $id]);
             throw new NotFoundHttpException('The material was not found.');
         }
 
@@ -111,6 +148,7 @@ class MaterialService
         if (null !== $categoryId) {
             $category = $this->categoryRepository->find($categoryId);
             if (null === $category) {
+                $this->logger->error('Category not found', ['categoryId' => $categoryId]);
                 throw new NotFoundHttpException('Category not found');
             }
             $material->setCategory($category);
@@ -120,19 +158,28 @@ class MaterialService
 
         $this->entityManager->flush();
 
-        return new IdResponse($material->getId());
+        $response = new IdResponse($material->getId());
+        $this->logger->info('update method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 
     public function delete(int $id): IdResponse
     {
+        $this->logger->info('Executing delete method', ['id' => $id]);
+
         $material = $this->materialRepository->find($id);
         if (null === $material) {
+            $this->logger->error('Material not found', ['id' => $id]);
             throw new NotFoundHttpException('The material was not found.');
         }
 
         $this->entityManager->remove($material);
         $this->entityManager->flush();
 
-        return new IdResponse($id);
+        $response = new IdResponse($id);
+        $this->logger->info('delete method executed successfully', ['response' => $response]);
+
+        return $response;
     }
 }
